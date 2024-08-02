@@ -2,9 +2,9 @@ import os
 import pickle
 from dataclasses import dataclass, field
 from typing import Optional
-from sympy import sympify
-from gplearn.genetic import SymbolicRegressor
+from sympy import sympify, sin, cos
 
+from gplearn.genetic import SymbolicRegressor
 @dataclass
 class GpLearnConfig:
     population_size: Optional[int] = field(default=5000)
@@ -17,6 +17,7 @@ class GpLearnConfig:
     max_samples: Optional[float] = field(default=0.9)
     verbose: Optional[int] = field(default=1)
     parsimony_coefficient: Optional[float] = field(default=0.01)
+    function_set: Optional[list] = field(default_factory=['add', 'sub', 'mul', 'div', 'sqrt', 'log', 'neg', 'inv', 'sin', 'cos', 'tan', ])
     random_state: Optional[int] = field(default=42)
 
     @classmethod
@@ -51,7 +52,8 @@ class GpLearnRegressor:
                                   max_samples=self.config.max_samples,
                                   verbose=self.config.verbose,
                                   parsimony_coefficient=self.config.parsimony_coefficient,
-                                  random_state=self.config.random_state)
+                                  random_state=self.config.random_state,
+                                  function_set=self.config.function_set)
         return model
     
     def predict_single(self, X, y, sympify_expr=True):
