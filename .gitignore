@@ -1,4 +1,5 @@
 dataset/
+dataset1000/
 
 __pycache__/
 *.py[cod]
