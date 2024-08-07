@@ -1,6 +1,7 @@
 import os
 import pickle
-from dataclasses import dataclass, field
+import yaml
+from dataclasses import dataclass, field, asdict
 from typing import Optional
 from pygpg.sk import GPGRegressor
 
@@ -26,8 +27,18 @@ class GpGomeaConfig:
     random_state: Optional[int] = field(default=0)
 
     @classmethod
-    def from_yaml(cls, yaml_string):
-        pass
+    def from_yaml(cls, yaml_string, from_file=True):
+        if from_file:
+            with open(yaml_string) as f:
+                yaml_string = f.read()
+        
+        args_dict = yaml.safe_load(yaml_string)
+        try:
+            config = GpGomeaConfig(**args_dict)
+        except TypeError:
+            ExtendedGpGomeaConfig = dataclass(type("ExtendedGpGomeaConfig", (object,), {"__annotations__": args_dict}))
+            config = ExtendedGpGomeaConfig(**args_dict)
+        return config
 
 class GpGomeaRegressor:
     def __init__(self, config):
@@ -47,26 +58,7 @@ class GpGomeaRegressor:
                           }
 
     def get_model(self):
-        model = GPGRegressor(
-            t=self.config.t,
-            g=self.config.g,
-            e=self.config.e,
-            finetune_max_evals=self.config.finetune_max_evals,
-            finetune=self.config.finetune,
-            tour=self.config.tour,
-            d=self.config.d,
-            pop=self.config.pop,
-            disable_ims=self.config.disable_ims,
-            feat_sel=self.config.feat_sel,
-            no_univ_exc_leaves_fos=self.config.no_univ_exc_leaves_fos,
-            no_large_fos=self.config.no_large_fos,
-            bs=self.config.bs,
-            fset=self.config.fset,
-            cmp=self.config.cmp,
-            rci=self.config.rci,
-            random_state=self.config.random_state,
-            verbose=self.config.verbose
-            )
+        model = GPGRegressor(**asdict(self.config))
         return model
     
     def predict_single(self, X, y):

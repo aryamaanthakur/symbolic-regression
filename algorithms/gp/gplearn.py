@@ -1,6 +1,7 @@
 import os
 import pickle
-from dataclasses import dataclass, field
+import yaml
+from dataclasses import dataclass, field, asdict
 from typing import Optional
 from sympy import sympify, sin, cos
 
@@ -17,12 +18,22 @@ class GpLearnConfig:
     max_samples: Optional[float] = field(default=0.9)
     verbose: Optional[int] = field(default=1)
     parsimony_coefficient: Optional[float] = field(default=0.01)
-    function_set: Optional[list] = field(default_factory=['add', 'sub', 'mul', 'div', 'sqrt', 'log', 'neg', 'inv', 'sin', 'cos', 'tan', ])
+    function_set: Optional[list] = field(default_factory=lambda: ['add', 'sub', 'mul', 'div', 'sqrt', 'log', 'neg', 'inv', 'sin', 'cos', 'tan', ])
     random_state: Optional[int] = field(default=42)
 
     @classmethod
-    def from_yaml(cls, yaml_string):
-        pass
+    def from_yaml(cls, yaml_string, from_file=True):
+        if from_file:
+            with open(yaml_string) as f:
+                yaml_string = f.read()
+        
+        args_dict = yaml.safe_load(yaml_string)
+        try:
+            config = GpLearnConfig(**args_dict)
+        except TypeError:
+            ExtendedGpLearnConfig = dataclass(type("ExtendedGpLearnConfig", (object,), {"__annotations__": args_dict}))
+            config = ExtendedGpLearnConfig(**args_dict)
+        return config
 
 class GpLearnRegressor:
     def __init__(self, config):
@@ -42,18 +53,7 @@ class GpLearnRegressor:
                           }
 
     def get_model(self):
-        model = SymbolicRegressor(population_size=self.config.population_size,
-                                  generations=self.config.generations,
-                                  stopping_criteria=self.config.stopping_criteria,
-                                  p_crossover=self.config.p_crossover,
-                                  p_subtree_mutation=self.config.p_subtree_mutation,
-                                  p_hoist_mutation=self.config.p_hoist_mutation,
-                                  p_point_mutation=self.config.p_point_mutation,
-                                  max_samples=self.config.max_samples,
-                                  verbose=self.config.verbose,
-                                  parsimony_coefficient=self.config.parsimony_coefficient,
-                                  random_state=self.config.random_state,
-                                  function_set=self.config.function_set)
+        model = SymbolicRegressor(**asdict(self.config))
         return model
     
     def predict_single(self, X, y, sympify_expr=True):
